@@ -4,6 +4,7 @@ import pytest
 
 from datastore.shared.di import injector
 from datastore.shared.services import EnvironmentService, ShutdownService
+from datastore.shared.util.otel import make_span
 from datastore.writer.redis_backend.connection_handler import ConnectionHandler
 from datastore.writer.redis_backend.redis_connection_handler import (
     RedisConnectionHandlerService,
@@ -27,7 +28,7 @@ def connection(provide_di):
 def test_xadd_empty_arguments(connection):
     connection.ensure_connection = ec = MagicMock()
     connection.xadd(None, None)
-    ec.assert_not_called()
+    ec.assert_not_called()    
 
 
 def test_shutdown(connection):

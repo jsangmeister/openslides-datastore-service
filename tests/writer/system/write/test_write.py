@@ -7,6 +7,7 @@ import pytest
 from datastore.shared.di import injector
 from datastore.shared.flask_frontend import ERROR_CODES
 from datastore.shared.postgresql_backend import ConnectionHandler
+from datastore.shared.services.environment_service import EnvironmentService
 from datastore.writer.core import Messaging
 from datastore.writer.flask_frontend.routes import WRITE_URL
 from tests.util import assert_error_response, assert_response_code
@@ -81,3 +82,12 @@ def test_two_write_requests_with_locked_fields(
     assert_model("a/1", {"f": 1}, 1)
     assert_error_response(response, ERROR_CODES.MODEL_LOCKED)
     assert_no_modified_fields(redis_connection)
+
+
+def test_write_request_with_otel(json_client, data, redis_connection, reset_redis_data):
+    env = injector.get(EnvironmentService)
+    env.set("OPENTELEMETRY_ENABLED", "1")
+    response = json_client.post(WRITE_URL, [data])
+    assert_response_code(response, 201)
+    assert_model("a/1", {"f": 1}, 1)
+    assert_modified_fields(redis_connection, {"a/1": ["f"]}, meta_deleted=False)

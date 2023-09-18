@@ -1,6 +1,8 @@
 from contextlib import nullcontext
+from typing import Any, Dict
 
 from opentelemetry import trace
+from opentelemetry.propagate import get_global_textmap as get_propagator
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
@@ -32,9 +34,6 @@ def init(service_name):
     span_exporter = OTLPSpanExporter(
         endpoint="http://collector:4317",
         insecure=True
-        # optional
-        # credentials=ChannelCredentials(credentials),
-        # headers=(("metadata", "metadata")),
     )
     tracer_provider = TracerProvider(
         resource=Resource.create({SERVICE_NAME: service_name})
@@ -70,3 +69,15 @@ def make_span(name, attributes=None):
     span = tracer.start_as_current_span(name, attributes=attributes)
 
     return span
+
+class Setter:
+    def set(self, carrier: Dict[str, Any], key: str, value: Any) -> None:
+        carrier.setdefault(OTEL_DATA_FIELD_KEY, {})[key] = value
+
+def inject_otel_data(fields: Dict[str, Any]) -> None:
+    if is_otel_enabled():
+        with make_span("inject_otel_data"):
+            get_propagator().inject(
+                carrier=fields,
+                setter=Setter
+            )

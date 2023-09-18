@@ -4,6 +4,7 @@ import redis
 
 from datastore.shared.di import service_as_singleton
 from datastore.shared.services import EnvironmentService, ShutdownService
+from datastore.shared.util.otel import inject_otel_data
 
 
 # TODO: Test this. Add something like a @ensure_connection decorator, that wraps a
@@ -43,6 +44,7 @@ class RedisConnectionHandlerService:
         if not fields or not topic:
             return
         connection = self.ensure_connection()
+        inject_otel_data(fields)
         connection.xadd(topic, fields)
 
     def shutdown(self):
